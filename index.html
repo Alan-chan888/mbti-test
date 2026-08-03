@@ -61,6 +61,29 @@
     font-size: 12px;
     color: #bbb;
   }
+  .splash-input {
+    border: none;
+    border-bottom: 2px solid #e0e0e8;
+    font-size: 36px;
+    font-weight: 900;
+    color: #1a1a2e;
+    text-align: center;
+    width: 220px;
+    padding: 8px 0;
+    outline: none;
+    font-family: inherit;
+    background: transparent;
+    transition: border-color 0.3s;
+    caret-color: #667eea;
+  }
+  .splash-input:focus { border-bottom-color: #667eea; }
+  .splash-input::placeholder { color: #ccc; font-weight: 400; font-size: 24px; }
+  .splash-greeting { font-size: 38px; font-weight: 900; color: #1a1a2e; line-height: 1.3; min-height: 50px; }
+  .splash-greeting .accent {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 
   .welcome { text-align: center; display: none; }
   .welcome.show { display: block; }
@@ -140,7 +163,8 @@
   <!-- ====== SPLASH ====== -->
   <div class="splash fade-in" id="splash">
     <div class="splash-badge">MBTI Personality Test</div>
-    <h1>赞轩，欢迎你<span class="accent">测试</span></h1>
+    <input class="splash-input" id="nameInput" type="text" placeholder="你的名字" maxlength="10" oninput="updateGreeting()">
+    <div class="splash-greeting" id="greeting"></div>
     <p class="byline">发现最真实的自己，只需要 8 分钟</p>
     <div class="cta">
       <button class="btn btn-primary" onclick="goToWelcome()">开始探索 →</button>
@@ -411,7 +435,17 @@ const typeData = {
 };
 
 // ==================== STATE ====================
-let currentQ = 0, answers = {}, selectedOption = null;
+let currentQ = 0, answers = {}, selectedOption = null, userName = '';
+
+function updateGreeting() {
+  userName = document.getElementById('nameInput').value.trim();
+  const el = document.getElementById('greeting');
+  if (userName) {
+    el.innerHTML = `${userName}，欢迎你<span class="accent">测试</span>！`;
+  } else {
+    el.innerHTML = '';
+  }
+}
 
 function goToWelcome() {
   document.getElementById('splash').style.display = 'none';
@@ -538,6 +572,9 @@ function restartQuiz() {
   document.getElementById('quiz').classList.remove('show');
   document.getElementById('welcome').classList.remove('show');
   document.getElementById('splash').style.display = '';
+  document.getElementById('nameInput').value = '';
+  document.getElementById('greeting').innerHTML = '';
+  userName = '';
   currentQ = 0; answers = {}; selectedOption = null;
   window.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -545,7 +582,8 @@ function restartQuiz() {
 function shareResult() {
   const { type } = calculateResult();
   const data = typeData[type];
-  const text = `🧠 我的 MBTI 人格类型是 ${type}「${data.name}」— ${data.tagline}！来测测你是什么类型？👉 https://alan-chan888.github.io/mbti-test/`;
+  const prefix = userName ? `${userName}的` : '我的';
+  const text = `🧠 ${prefix} MBTI 人格类型是 ${type}「${data.name}」— ${data.tagline}！来测测你是什么类型？👉 https://alan-chan888.github.io/mbti-test/`;
   if (navigator.share) { navigator.share({ title:'MBTI 人格测试', text }); }
   else { navigator.clipboard.writeText(text).then(() => alert('已复制分享文案！')); }
 }
