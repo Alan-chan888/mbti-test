@@ -163,12 +163,19 @@
   <!-- ====== SPLASH ====== -->
   <div class="splash fade-in" id="splash">
     <div class="splash-badge">MBTI Personality Test</div>
-    <input class="splash-input" id="nameInput" type="text" placeholder="你的名字" maxlength="10" oninput="updateGreeting()">
-    <div class="splash-greeting" id="greeting"></div>
-    <p class="byline">发现最真实的自己，只需要 8 分钟</p>
-    <div class="cta">
-      <button class="btn btn-primary" onclick="goToWelcome()">开始探索 →</button>
-      <span class="cta-hint">72 道题 · 16 种人格结果 · 深度解读</span>
+
+    <div class="splash-step" id="splashStep1">
+      <p class="byline">发现最真实的自己，只需要 8 分钟</p>
+      <input class="splash-input" id="nameInput" type="text" placeholder="你的名字" maxlength="10" onkeydown="if(event.key==='Enter')confirmName()">
+      <button class="btn btn-primary" onclick="confirmName()" style="margin-top:20px">确认</button>
+    </div>
+
+    <div class="splash-step" id="splashStep2" style="display:none">
+      <div class="splash-greeting fade-in" id="greeting"></div>
+      <div class="cta" style="margin-top:24px">
+        <button class="btn btn-primary" onclick="goToWelcome()">开始探索 →</button>
+        <span class="cta-hint">72 道题 · 16 种人格结果 · 深度解读</span>
+      </div>
     </div>
   </div>
 
@@ -437,14 +444,16 @@ const typeData = {
 // ==================== STATE ====================
 let currentQ = 0, answers = {}, selectedOption = null, userName = '';
 
-function updateGreeting() {
+function confirmName() {
   userName = document.getElementById('nameInput').value.trim();
-  const el = document.getElementById('greeting');
-  if (userName) {
-    el.innerHTML = `${userName}，欢迎你<span class="accent">测试</span>！`;
-  } else {
-    el.innerHTML = '';
-  }
+  if (!userName) return;
+  document.getElementById('splashStep1').style.display = 'none';
+  document.getElementById('greeting').innerHTML = `${userName}，欢迎你<span class="accent">测试</span>！`;
+  const step2 = document.getElementById('splashStep2');
+  step2.style.display = '';
+  step2.querySelector('.splash-greeting').classList.remove('fade-in');
+  void step2.querySelector('.splash-greeting').offsetWidth;
+  step2.querySelector('.splash-greeting').classList.add('fade-in');
 }
 
 function goToWelcome() {
@@ -572,8 +581,9 @@ function restartQuiz() {
   document.getElementById('quiz').classList.remove('show');
   document.getElementById('welcome').classList.remove('show');
   document.getElementById('splash').style.display = '';
+  document.getElementById('splashStep1').style.display = '';
+  document.getElementById('splashStep2').style.display = 'none';
   document.getElementById('nameInput').value = '';
-  document.getElementById('greeting').innerHTML = '';
   userName = '';
   currentQ = 0; answers = {}; selectedOption = null;
   window.scrollTo({ top:0, behavior:'smooth' });
