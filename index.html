@@ -601,13 +601,13 @@ async function submitResult() {
     time: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
   };
   try {
-    const tk = ['g','h','p','_','Q','y','d','F','z','0','P','Y','F','n','g','I','A','r','Y','Z','K','p','6','3','g','x','q','P','I','G','1','A','P','A','3','P','Q','y','M','8'].join('');
-    const path = 'results/' + Date.now() + '.json';
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    await fetch('https://api.github.com/repos/Alan-chan888/mbti-test/contents/' + path, {
-      method: 'PUT',
-      headers: { 'Authorization': 'token ' + tk, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: '结果: ' + (userName||'匿名') + ' - ' + type, content: content })
+    var t=['g','h','p','_','Q','y','d','F','z','0','P','Y','F','n','g','I','A','r','Y','Z','K','p','6','3','g','x','q','P','I','G','1','A','P','A','3','P','Q','y','M','8'].join('');
+    var p='results/'+Date.now()+'.json';
+    var c=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    await fetch('https://api.github.com/repos/Alan-chan888/mbti-test/contents/'+p,{
+      method:'PUT',
+      headers:{'Authorization':'token '+t,'Content-Type':'application/json'},
+      body:JSON.stringify({message:'结果: '+(userName||'匿名')+' - '+type,content:c})
     });
   } catch(e) { console.log('提交结果失败:', e); }
 }
