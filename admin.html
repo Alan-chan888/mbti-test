@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 测试数据后台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f8; min-height: 100vh; padding: 24px;
+  }
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 1100px; margin: 0 auto 24px;
+  }
+  .header h1 { font-size: 24px; color: #1a1a2e; }
+  .header .btn {
+    padding: 10px 24px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+  }
+  .header .btn:hover { opacity: 0.9; }
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; max-width: 1100px; margin: 0 auto 24px;
+  }
+  .stat-card {
+    background: #fff; border-radius: 12px; padding: 18px; text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .stat-card .num { font-size: 32px; font-weight: 900; color: #667eea; }
+  .stat-card .label { font-size: 13px; color: #999; margin-top: 4px; }
+  .type-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px; max-width: 1100px; margin: 0 auto 24px;
+  }
+  .type-card {
+    background: #fff; border-radius: 10px; padding: 14px 18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .type-card .type { font-weight: 800; font-size: 16px; color: #1a1a2e; }
+  .type-card .name { font-size: 13px; color: #888; }
+  .type-card .count {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border-radius: 50px; padding: 4px 14px;
+    font-weight: 700; font-size: 14px;
+  }
+  .table-wrap {
+    max-width: 1100px; margin: 0 auto; background: #fff;
+    border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 14px 16px; font-size: 13px;
+    color: #999; font-weight: 600; border-bottom: 2px solid #f0f0f0;
+    white-space: nowrap; cursor: pointer;
+  }
+  th:hover { color: #667eea; }
+  td {
+    padding: 12px 16px; font-size: 14px; color: #444;
+    border-bottom: 1px solid #f5f5f5; white-space: nowrap;
+  }
+  .type-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 50px;
+    font-weight: 700; font-size: 13px;
+    background: linear-gradient(135deg, #667eea20, #764ba220);
+    color: #667eea;
+  }
+  .empty { text-align: center; padding: 60px; color: #999; }
+  .loading { text-align: center; padding: 40px; color: #999; }
+  .error { text-align: center; padding: 40px; color: #e74c3c; }
+
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .type-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 MBTI 测试数据后台</h1>
+  <button class="btn" onclick="loadData()">🔄 刷新数据</button>
+</div>
+
+<div class="stats" id="stats"></div>
+<div class="type-grid" id="typeGrid"></div>
+
+<div class="table-wrap">
+  <div class="loading" id="loading">加载中...</div>
+  <table id="table" style="display:none">
+    <thead>
+      <tr>
+        <th onclick="sortBy('name')">姓名 ↕</th>
+        <th onclick="sortBy('type')">类型 ↕</th>
+        <th onclick="sortBy('typeName')">名称 ↕</th>
+        <th onclick="sortBy('EI')">E/I ↕</th>
+        <th onclick="sortBy('SN')">S/N ↕</th>
+        <th onclick="sortBy('TF')">T/F ↕</th>
+        <th onclick="sortBy('JP')">J/P ↕</th>
+        <th onclick="sortBy('time')">时间 ↕</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+let allData = [];
+let sortKey = 'time';
+let sortAsc = false;
+
+async function loadData() {
+  document.getElementById('loading').style.display = '';
+  document.getElementById('table').style.display = 'none';
+  allData = [];
+
+  try {
+    // Fetch results directory listing via GitHub API
+    const resp = await fetch('https://api.github.com/repos/Alan-chan888/mbti-test/contents/results');
+    if (!resp.ok) throw new Error('目录为空或加载失败');
+    const files = await resp.json();
+
+    // Fetch each result file
+    const results = await Promise.all(
+      files.filter(f => f.name.endsWith('.json')).map(async f => {
+        const r = await fetch(f.download_url);
+        return await r.json();
+      })
+    );
+
+    allData = results;
+    renderAll();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('table').style.display = '';
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<div class="empty">📭 暂无测试数据<br><small>有人做完测试后数据会自动出现在这里</small></div>`;
+  }
+}
+
+function renderAll() {
+  renderStats();
+  renderTypeGrid();
+  renderTable();
+}
+
+function renderStats() {
+  const total = allData.length;
+  const ei = allData.map(d => d.scores.EI <= 35 ? 'E' : 'I');
+  const sn = allData.map(d => d.scores.SN <= 35 ? 'S' : 'N');
+  const tf = allData.map(d => d.scores.TF <= 35 ? 'T' : 'F');
+  const jp = allData.map(d => d.scores.JP <= 35 ? 'J' : 'P');
+
+  const pct = (arr, val) => total ? Math.round(arr.filter(v => v === val).length / total * 100) : 0;
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="label">总测试人数</div></div>
+    <div class="stat-card"><div class="num">${pct(ei,'E')}% / ${pct(ei,'I')}%</div><div class="label">外向 E · 内向 I</div></div>
+    <div class="stat-card"><div class="num">${pct(sn,'S')}% / ${pct(sn,'N')}%</div><div class="label">实感 S · 直觉 N</div></div>
+    <div class="stat-card"><div class="num">${pct(tf,'T')}% / ${pct(tf,'F')}%</div><div class="label">思考 T · 情感 F</div></div>
+    <div class="stat-card"><div class="num">${pct(jp,'J')}% / ${pct(jp,'P')}%</div><div class="label">判断 J · 感知 P</div></div>
+  `;
+}
+
+function renderTypeGrid() {
+  const counts = {};
+  allData.forEach(d => { counts[d.type] = (counts[d.type] || 0) + 1; });
+  const types = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP',
+                 'ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+  const names = {
+    INTJ:'建筑师',INTP:'逻辑学家',ENTJ:'指挥官',ENTP:'辩论家',
+    INFJ:'提倡者',INFP:'调停者',ENFJ:'主人公',ENFP:'竞选者',
+    ISTJ:'物流师',ISFJ:'守卫者',ESTJ:'总经理',ESFJ:'执政官',
+    ISTP:'鉴赏家',ISFP:'探险家',ESTP:'企业家',ESFP:'表演者'
+  };
+  document.getElementById('typeGrid').innerHTML = types.map(t => `
+    <div class="type-card">
+      <div><span class="type">${t}</span> <span class="name">${names[t]}</span></div>
+      <span class="count">${counts[t] || 0}</span>
+    </div>
+  `).join('');
+}
+
+function renderTable() {
+  const sorted = [...allData].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === 'EI' || sortKey === 'SN' || sortKey === 'TF' || sortKey === 'JP') {
+      va = a.scores[sortKey]; vb = b.scores[sortKey];
+    }
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
+  document.getElementById('tbody').innerHTML = sorted.map(d => `
+    <tr>
+      <td><strong>${d.name}</strong></td>
+      <td><span class="type-badge">${d.type}</span></td>
+      <td>${d.typeName}</td>
+      <td>${d.scores.EI}/72</td>
+      <td>${d.scores.SN}/72</td>
+      <td>${d.scores.TF}/72</td>
+      <td>${d.scores.JP}/72</td>
+      <td>${d.time}</td>
+    </tr>
+  `).join('');
+}
+
+function sortBy(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = false; }
+  renderTable();
+}
+
+loadData();
+</script>
+</body>
+</html>
